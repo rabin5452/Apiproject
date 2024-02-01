@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Practiseproject.Data;
 using Practiseproject.DTO;
@@ -9,6 +10,7 @@ namespace Practiseproject.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class StudentController : ControllerBase
     {
        
@@ -19,6 +21,7 @@ namespace Practiseproject.Controllers
             
         }
         [HttpGet]
+
         public IActionResult GetAll()
         {
            List<StudentDTO> studentDTOs=_studentService.GetAllStudents();

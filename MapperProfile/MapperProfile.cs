@@ -9,6 +9,8 @@ namespace Practiseproject.MapperProfile
         public MapperProfile() 
         {
             CreateMap<Student,StudentDTO>().ReverseMap();
+            CreateMap<User,AddUser>().ReverseMap();
+            CreateMap<User,UserDTO>().ReverseMap(); 
         }
     }
 }
