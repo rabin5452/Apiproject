@@ -4,7 +4,8 @@ namespace Practiseproject.Services.Interface
 {
     public interface IAuthService
     {
-        AddUser Add(AddUser user);
-        string Login(LoginModel loginModel);
+        Task<AddUser> Add(AddUser adduser);
+        Task<TokenResponse> Login(LoginModel loginModel);
+        Task<TokenModel> RefreshToken(TokenModel tokenModel);
     }
 }

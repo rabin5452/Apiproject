@@ -12,6 +12,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Swashbuckle.AspNetCore.SwaggerUI;
+using Microsoft.AspNetCore.Identity;
+using Practiseproject.Model;
 
 namespace Practiseproject
 {
@@ -32,6 +34,9 @@ namespace Practiseproject
             builder.Services.AddScoped<IStudentService, StudentService>();
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddAutoMapper(typeof(Program));
+            builder.Services.AddIdentity<User, IdentityRole>()
+            .AddEntityFrameworkStores<ProjectDBContext>()
+            .AddDefaultTokenProviders();
             builder.Services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -58,6 +63,33 @@ namespace Practiseproject
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+            builder.Services.AddSwaggerGen(opt =>
+            {
+                opt.SwaggerDoc("v1", new OpenApiInfo { Title = "PractiseProject", Version = "v1" });
+                opt.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    In = ParameterLocation.Header,
+                    Description = "JWT Authorization header. \r\n\r\n Enter: [token] in the text input below.",
+                    Name = "Authorization",
+                    Type = SecuritySchemeType.Http,
+                    BearerFormat = "JWT",
+                    Scheme = "bearer",
+                });
+                opt.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+            {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type=ReferenceType.SecurityScheme,
+                    Id="Bearer"
+                }
+            },
+            Array.Empty<string>()
+            }
+                });
+            });
 
 
             var app = builder.Build();
