@@ -25,15 +25,20 @@ namespace Practiseproject.Controllers
             var result=await _authService.Login(loginModel);
             return Ok(result);
         }
+        [Authorize(Roles ="Admin")]
+        [HttpPost("add-Admin")]
+        public async Task<IActionResult> AddAdmin([FromBody] AddUser addUser)
+        {
+            addUser=await _authService.AddAdmin(addUser);
+            return Ok(addUser);
+        }
         [HttpPost("adduser")]
         public async Task<IActionResult> AddUser([FromBody] AddUser addUser)
         {
             addUser=await _authService.Add(addUser);
-            LoginModel loginModel = new() { Username = addUser.Username,Password = addUser.Password };
-            Login(loginModel);
             return Ok(addUser);
         }
-        [Authorize]
+
         [HttpPost]
         [Route("revoke/{username}")]
         public async Task<IActionResult> Revoke(string username)
@@ -44,7 +49,7 @@ namespace Practiseproject.Controllers
             user.RefreshToken = null;
             await _userManager.UpdateAsync(user);
 
-            return NoContent();
+            return Ok("LoggedOut");
         }
         [HttpPost]
         [Route("refresh-token")]

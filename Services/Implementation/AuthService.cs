@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
 using Azure;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using Practiseproject.Constraint;
 using Practiseproject.Data;
 using Practiseproject.DTO;
 using Practiseproject.GenericeRepository.Interface;
@@ -20,32 +22,52 @@ namespace Practiseproject.Services.Implementation
         private readonly IMapper _mapper;
         private readonly IConfiguration _configuration;
         private readonly UserManager<User> _userManager;
-        public AuthService(IGenericRepository<User> userRepository, IMapper mapper, IConfiguration configuration, UserManager<User> userManager)
+        private readonly RoleManager<IdentityRole> _roleManager;
+        public AuthService(IGenericRepository<User> userRepository, IMapper mapper, IConfiguration configuration, UserManager<User> userManager, RoleManager<IdentityRole> roleManager)
         {
             _userManager = userManager;
-
             _configuration = configuration;
             _mapper = mapper;
             _genericRepository = userRepository;
+            _roleManager = roleManager;
         }
-
-        public async Task<AddUser> Add(AddUser adduser)
+        public async Task<AddUser> AddAdmin(AddUser adduser)
         {
-            var userexist = await _userManager.FindByNameAsync(adduser.Username);
-            if (userexist == null)
+            var userExist = await _userManager.FindByNameAsync(adduser.Username);
+
+            if (userExist == null)
             {
-                User user = new()
+                var user = new User
                 {
                     Email = adduser.Email,
-                    SecurityStamp = Guid.NewGuid().ToString(),
                     UserName = adduser.Username,
-                    PasswordHash = adduser.Password
-
+                    // Password should not be set here; let Identity handle hashing
                 };
-                var result = await _userManager.CreateAsync(user, adduser.Password);
-                adduser = _mapper.Map<AddUser>(user);
-                return adduser;
 
+                var result = await _userManager.CreateAsync(user, adduser.Password);
+
+                if (result.Succeeded)
+                {
+                    // Check if the role exists, and create it if not
+                    var roleExists = await _roleManager.RoleExistsAsync(Roles.Admin.ToString());
+                    if (!roleExists)
+                    {
+                        // Create the role if it doesn't exist
+                        await _roleManager.CreateAsync(new IdentityRole(Roles.Admin.ToString()));
+                    }
+
+                    // Assign the user to the "User" role
+                    await _userManager.AddToRoleAsync(user, Roles.Admin.ToString());
+
+                    adduser = _mapper.Map<AddUser>(user);
+                    return adduser;
+                }
+                else
+                {
+                    // Handle errors from _userManager.CreateAsync if needed
+                    adduser = null;
+                    return adduser;
+                }
             }
             else
             {
@@ -53,6 +75,51 @@ namespace Practiseproject.Services.Implementation
                 return adduser;
             }
         }
+        public async Task<AddUser> Add(AddUser adduser)
+        {
+            var userExist = await _userManager.FindByNameAsync(adduser.Username);
+
+            if (userExist == null)
+            {
+                var user = new User
+                {
+                    Email = adduser.Email,
+                    UserName = adduser.Username,
+                    // Password should not be set here; let Identity handle hashing
+                };
+
+                var result = await _userManager.CreateAsync(user, adduser.Password);
+
+                if (result.Succeeded)
+                {
+                    // Check if the role exists, and create it if not
+                    var roleExists = await _roleManager.RoleExistsAsync(Roles.User.ToString());
+                    if (!roleExists)
+                    {
+                        // Create the role if it doesn't exist
+                        await _roleManager.CreateAsync(new IdentityRole(Roles.User.ToString()));
+                    }
+
+                    // Assign the user to the "User" role
+                    await _userManager.AddToRoleAsync(user, Roles.User.ToString());
+
+                    adduser = _mapper.Map<AddUser>(user);
+                    return adduser;
+                }
+                else
+                {
+                    // Handle errors from _userManager.CreateAsync if needed
+                    adduser = null;
+                    return adduser;
+                }
+            }
+            else
+            {
+                adduser = null;
+                return adduser;
+            }
+        }
+
 
         public async Task<TokenModel> RefreshToken(TokenModel tokenModel)
         {
@@ -92,11 +159,16 @@ namespace Practiseproject.Services.Implementation
 
             if (user != null && await _userManager.CheckPasswordAsync(user, loginModel.Password))
             {
+                var userRoles = await _userManager.GetRolesAsync(user);
                 var claims = new List<Claim>
-        {
-            new Claim(ClaimTypes.Name, loginModel.Username),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-        };
+                {
+                    new Claim(ClaimTypes.Name, loginModel.Username),
+                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                };
+                foreach (var userRole in userRoles)
+                {
+                    claims.Add(new Claim(ClaimTypes.Role, userRole));
+                }
 
                 var token = GetToken(claims);
                 var refreshToken = GenerateRefreshToken();

@@ -24,8 +24,6 @@ namespace Practiseproject
             var builder = WebApplication.CreateBuilder(args);
             var configuration = builder.Configuration;
             // Add services to the container.
-
-
             builder.Services.AddDbContext<ProjectDBContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -33,10 +31,11 @@ namespace Practiseproject
             builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             builder.Services.AddScoped<IStudentService, StudentService>();
             builder.Services.AddScoped<IAuthService, AuthService>();
+            
             builder.Services.AddAutoMapper(typeof(Program));
             builder.Services.AddIdentity<User, IdentityRole>()
-            .AddEntityFrameworkStores<ProjectDBContext>()
-            .AddDefaultTokenProviders();
+                .AddEntityFrameworkStores<ProjectDBContext>()
+                .AddDefaultTokenProviders();
             builder.Services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -90,7 +89,6 @@ namespace Practiseproject
             }
                 });
             });
-
 
             var app = builder.Build();
 
